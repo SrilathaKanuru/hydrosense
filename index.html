@@ -1,74 +1,216 @@
-<script>
-  const ctx = document.getElementById('flowChart').getContext('2d');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HydroSense Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --glass: rgba(255, 255, 255, 0.15);
+      --bg: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      --text: #ffffff;
+      --highlight: #00bcd4;
+    }
 
-  // Create gradient fill
-  const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-  gradient.addColorStop(0, 'rgba(0, 188, 212, 0.4)');
-  gradient.addColorStop(1, 'rgba(0, 188, 212, 0)');
+    * {
+      box-sizing: border-box;
+    }
 
-  const chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label: 'Flow Rate (L/min)',
-        data: [],
-        fill: true,
-        borderColor: '#00bcd4',
-        backgroundColor: gradient,
-        pointBackgroundColor: '#00bcd4',
-        pointBorderColor: '#fff',
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      animation: {
-        duration: 800,
-        easing: 'easeOutQuart'
+    body {
+      font-family: 'Nunito', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    header {
+      background: transparent;
+      color: white;
+      text-align: center;
+      padding: 2rem 1rem;
+      font-size: 1.8rem;
+      font-weight: bold;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      color: white;
+      animation: fadeIn 0.8s ease-in-out;
+    }
+
+    button {
+      background: var(--highlight);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background: #008c9e;
+      box-shadow: 0 0 10px #00bcd4;
+    }
+
+    canvas {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 450px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <header>💧 HydroSense Dashboard</header>
+  <main>
+    <div class="card">🚿 <strong>Flow Rate:</strong> <span id="flow">--</span> L/min</div>
+    <div class="card">🛢️ <strong>Tank Level:</strong> <span id="tank">--</span> %</div>
+    <div class="card">🌱 <strong>Soil Moisture:</strong> <span id="moisture">--</span> %</div>
+    <div class="card">🚰 <strong>Motor:</strong> <button id="motorBtn">OFF</button></div>
+    <div class="card">
+      <h3>📊 Flow Rate Chart</h3>
+      <canvas id="flowChart" height="200"></canvas>
+    </div>
+  </main>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    // ✅ Replace with your Firebase config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const flowElem = document.getElementById('flow');
+    const tankElem = document.getElementById('tank');
+    const moistElem = document.getElementById('moisture');
+    const motorBtn = document.getElementById('motorBtn');
+
+    // Motor toggle
+    motorBtn.onclick = () => {
+      const newState = motorBtn.textContent === 'OFF' ? 'ON' : 'OFF';
+      db.ref('motor').set(newState);
+    };
+
+    // Live data updates
+    db.ref('flow').on('value', snap => {
+      const val = snap.val();
+      flowElem.textContent = val;
+      updateChart(val);
+    });
+    db.ref('tank').on('value', snap => tankElem.textContent = snap.val());
+    db.ref('moisture').on('value', snap => moistElem.textContent = snap.val());
+    db.ref('motor').on('value', snap => {
+      motorBtn.textContent = snap.val();
+    });
+
+    // Chart setup
+    const ctx = document.getElementById('flowChart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, 'rgba(0, 188, 212, 0.4)');
+    gradient.addColorStop(1, 'rgba(0, 188, 212, 0)');
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Flow Rate (L/min)',
+          data: [],
+          fill: true,
+          borderColor: '#00e0ff',
+          backgroundColor: gradient,
+          pointBackgroundColor: '#00e0ff',
+          pointBorderColor: '#fff',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          tension: 0.4
+        }]
       },
-      plugins: {
-        legend: {
-          labels: {
-            color: '#fff',
-            font: { size: 14 }
+      options: {
+        responsive: true,
+        animation: {
+          duration: 800,
+          easing: 'easeOutQuart'
+        },
+        plugins: {
+          legend: {
+            labels: { color: '#fff', font: { size: 14 } }
+          },
+          tooltip: {
+            backgroundColor: '#333',
+            titleColor: '#00e0ff',
+            bodyColor: '#fff',
+            borderColor: '#00e0ff',
+            borderWidth: 1,
+            cornerRadius: 8,
+            padding: 10
           }
         },
-        tooltip: {
-          backgroundColor: '#333',
-          titleColor: '#00e0ff',
-          bodyColor: '#fff',
-          borderWidth: 1,
-          borderColor: '#00e0ff',
-          cornerRadius: 8,
-          padding: 10
-        }
-      },
-      scales: {
-        x: {
-          ticks: { color: '#fff' },
-          grid: { color: 'rgba(255,255,255,0.1)' },
-          title: { display: true, text: 'Time', color: '#fff' }
-        },
-        y: {
-          beginAtZero: true,
-          ticks: { color: '#fff' },
-          grid: { color: 'rgba(255,255,255,0.1)' }
+        scales: {
+          x: {
+            ticks: { color: '#fff' },
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            title: { display: true, text: 'Time', color: '#fff' }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#fff' },
+            grid: { color: 'rgba(255,255,255,0.1)' }
+          }
         }
       }
-    }
-  });
+    });
 
-  function updateChart(val) {
-    const now = new Date().toLocaleTimeString();
-    chart.data.labels.push(now);
-    chart.data.datasets[0].data.push(parseFloat(val));
-    if (chart.data.labels.length > 12) {
-      chart.data.labels.shift();
-      chart.data.datasets[0].data.shift();
+    function updateChart(val) {
+      const now = new Date().toLocaleTimeString();
+      chart.data.labels.push(now);
+      chart.data.datasets[0].data.push(parseFloat(val));
+      if (chart.data.labels.length > 12) {
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
+      }
+      chart.update();
     }
-    chart.update();
-  }
-</script>
+  </script>
+</body>
+</html>
