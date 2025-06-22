@@ -1,21 +1,84 @@
 body {
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #e0f7fa;
-  text-align: center;
-  padding: 20px;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #eaf4fb;
+  color: #333;
 }
 
-h1 {
-  color: #00796b;
-  margin-bottom: 30px;
+header {
+  background-color: #0077cc;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+
+main {
+  padding: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
 }
 
 .card {
-  background: #ffffff;
-  margin: 15px auto;
-  padding: 20px;
-  width: 300px;
+  background: white;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  min-width: 280px;
+  text-align: center;
+}
+
+button {
+  background-color: #0077cc;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.alert {
+  background: #ffdede;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  color: #a10000;
+  font-weight: bold;
+  display: none;
+  width: 90%;
+  margin-top: 1rem;
+}
+
+footer {
+  text-align: center;
+  margin-top: 2rem;
+  font-style: italic;
+  background: #f0f8ff;
+  padding: 1rem;
+}
+
+input[type="number"] {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #aaa;
+  width: 60px;
+  margin-left: 0.5rem;
+}
+
+canvas {
+  background: #fff;
   border-radius: 10px;
-  font-size: 1.2em;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  padding: 10px;
+}
+
+table, th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+th {
+  background: #0077cc;
+  color: white;
 }
