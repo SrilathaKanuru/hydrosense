@@ -12,7 +12,6 @@
       --glass: rgba(255, 255, 255, 0.15);
       --bg-light: linear-gradient(135deg, #74ebd5, #ACB6E5);
       --text-dark: #111;
-      --primary: #00bcd4;
       --alert-color: #ff3860;
       --ok-color: #4CAF50;
     }
@@ -30,7 +29,7 @@
       padding: 1rem;
       border-radius: 12px;
       margin: 1rem auto;
-      max-width: 420px;
+      max-width: 440px;
       backdrop-filter: blur(8px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
@@ -38,8 +37,8 @@
     .alerts {
       color: var(--alert-color);
       font-weight: bold;
-      margin-top: 10px;
       text-align: center;
+      margin-top: 8px;
       animation: blink 1s step-start infinite;
     }
 
@@ -47,11 +46,33 @@
       color: var(--ok-color);
       font-weight: bold;
       text-align: center;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     canvas {
       margin-top: 1rem;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 10px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 6px;
+      text-align: center;
+      border-bottom: 1px solid #ccc;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #00bcd4;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
 
     @keyframes blink {
@@ -63,16 +84,17 @@
   <h2 style="text-align:center">💧 HydroSense Dashboard</h2>
 
   <div class="card">
-    🛢️ <strong>Tank Level:</strong> <span id="tankLevel">--</span>%
+    <div>🚿 <strong>Flow Rate:</strong> <span id="flowRate">--</span> L/min</div>
+    <div>🛢️ <strong>Tank Level:</strong> <span id="tankLevel">--</span>%</div>
+    <div>🌱 <strong>Moisture:</strong> <span id="moisture">--</span>%</div>
+    <div>🚰 <strong>Motor:</strong> <button id="toggleMotor">OFF</button></div>
     <div id="alertBox" class="alerts"></div>
   </div>
 
   <div class="card">
     📈 <strong>Tank Level History:</strong>
     <canvas id="tankChart" width="350" height="200"></canvas>
-    <button onclick="tankChart.resetZoom()" style="display:block;margin:10px auto;padding:6px 12px;background:#00bcd4;color:#fff;border:none;border-radius:8px;">
-      🔄 Reset Zoom
-    </button>
+    <button onclick="tankChart.resetZoom()">🔄 Reset Zoom</button>
   </div>
 
   <div class="card">
@@ -80,27 +102,38 @@
     <canvas id="weeklyUsageChart" width="350" height="200"></canvas>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <div class="card">
+    🧾 <strong>Last 5 Records:</strong>
+    <table id="historyTable">
+      <tr><th>Date</th><th>Flow</th><th>Tank</th><th>Moist</th></tr>
+    </table>
+  </div>
+
+  <div style="text-align:center;">
+    <button id="themeToggle">🌓 Toggle Theme</button>
+  </div>
+
   <script>
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
     const tankEl = document.getElementById("tankLevel");
+    const flowEl = document.getElementById("flowRate");
+    const moistEl = document.getElementById("moisture");
     const alertBox = document.getElementById("alertBox");
+    const toggleMotorBtn = document.getElementById("toggleMotor");
+    const themeBtn = document.getElementById("themeToggle");
 
-    const tankData = [];
-    const tankLabels = [];
+    let history = [];
+    let motor = false;
 
+    toggleMotorBtn.onclick = () => {
+      motor = !motor;
+      toggleMotorBtn.textContent = motor ? "ON" : "OFF";
+    };
+
+    themeBtn.onclick = () => {
+      document.body.classList.toggle("dark-mode");
+    };
+
+    const tankData = [], tankLabels = [];
     const ctxTank = document.getElementById("tankChart").getContext("2d");
     const tankChart = new Chart(ctxTank, {
       type: 'line',
@@ -120,46 +153,67 @@
       options: {
         responsive: true,
         plugins: {
-          legend: {
-            labels: { color: '#111' }
-          },
+          legend: { labels: { color: '#111' } },
           zoom: {
-            pan: {
-              enabled: true,
-              mode: 'x',
-              modifierKey: 'ctrl'
-            },
+            pan: { enabled: true, mode: 'x', modifierKey: 'ctrl' },
             zoom: {
-              wheel: {
-                enabled: true,
-              },
-              pinch: {
-                enabled: true
-              },
+              wheel: { enabled: true },
+              pinch: { enabled: true },
               mode: 'x'
             }
           }
         },
         scales: {
-          x: {
-            ticks: { color: '#111' }
-          },
-          y: {
-            beginAtZero: true,
-            max: 100,
-            ticks: { color: '#111' }
-          }
+          x: { ticks: { color: '#111' } },
+          y: { beginAtZero: true, max: 100, ticks: { color: '#111' } }
         }
       }
     });
 
-    db.ref("tank").on("value", snap => {
-      const val = snap.val();
-      tankEl.textContent = val;
-      if (val >= 90) {
+    const ctxWeekly = document.getElementById("weeklyUsageChart").getContext("2d");
+    const weeklyUsageChart = new Chart(ctxWeekly, {
+      type: 'bar',
+      data: {
+        labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        datasets: [{
+          label: 'Usage (Liters)',
+          data: [80, 65, 70, 90, 60, 75, 85],
+          backgroundColor: 'rgba(0, 188, 212, 0.6)',
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#111' } },
+          y: { beginAtZero: true, ticks: { color: '#111' } }
+        }
+      }
+    });
+
+    function updateData() {
+      const flow = (Math.random() * 5).toFixed(1);
+      const tank = Math.floor(Math.random() * 100);
+      const moist = Math.floor(Math.random() * 100);
+
+      flowEl.textContent = flow;
+      tankEl.textContent = tank;
+      moistEl.textContent = moist;
+
+      const now = new Date().toLocaleTimeString();
+      tankData.push(tank);
+      tankLabels.push(now);
+      if (tankData.length > 30) {
+        tankData.shift();
+        tankLabels.shift();
+      }
+      tankChart.update();
+
+      if (tank >= 90) {
         alertBox.textContent = "⚠️ Tank Full!";
         alertBox.className = "alerts";
-      } else if (val <= 10) {
+      } else if (tank <= 10) {
         alertBox.textContent = "⚠️ Tank Low!";
         alertBox.className = "alerts";
       } else {
@@ -167,42 +221,26 @@
         alertBox.className = "status-ok";
       }
 
-      const now = new Date().toLocaleTimeString();
-      tankData.push(val);
-      tankLabels.push(now);
-      if (tankData.length > 30) {
-        tankData.shift();
-        tankLabels.shift();
-      }
-      tankChart.update();
-    });
+      const today = new Date().toLocaleDateString();
+      history.unshift({ date: today, flow, tank, moist });
+      renderTable();
+    }
 
-    const weeklyUsageData = [80, 65, 70, 90, 60, 75, 85];
-    const weeklyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    function renderTable() {
+      const table = document.getElementById("historyTable");
+      table.innerHTML = "<tr><th>Date</th><th>Flow</th><th>Tank</th><th>Moist</th></tr>";
+      history.slice(0, 5).forEach(row => {
+        table.innerHTML += `<tr>
+          <td>${row.date}</td>
+          <td>${row.flow}</td>
+          <td>${row.tank}</td>
+          <td>${row.moist}</td>
+        </tr>`;
+      });
+    }
 
-    const ctxWeekly = document.getElementById("weeklyUsageChart").getContext("2d");
-    const weeklyUsageChart = new Chart(ctxWeekly, {
-      type: 'bar',
-      data: {
-        labels: weeklyLabels,
-        datasets: [{
-          label: 'Usage (Liters)',
-          data: weeklyUsageData,
-          backgroundColor: 'rgba(0, 188, 212, 0.6)',
-          borderRadius: 8,
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          x: { ticks: { color: '#111' } },
-          y: { beginAtZero: true, ticks: { color: '#111' } }
-        }
-      }
-    });
+    updateData();
+    setInterval(updateData, 5000);
   </script>
 </body>
 </html>
