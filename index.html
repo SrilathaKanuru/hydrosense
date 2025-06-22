@@ -6,12 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
   <style>
     :root {
       --glass: rgba(255, 255, 255, 0.15);
       --bg-light: linear-gradient(135deg, #74ebd5, #ACB6E5);
-      --bg-dark: linear-gradient(135deg, #1e1e2f, #3c3c5e);
-      --text-light: #fff;
       --text-dark: #111;
       --primary: #00bcd4;
       --alert-color: #ff3860;
@@ -31,7 +30,8 @@
       padding: 1rem;
       border-radius: 12px;
       margin: 1rem auto;
-      max-width: 400px;
+      max-width: 420px;
+      backdrop-filter: blur(8px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
@@ -70,6 +70,9 @@
   <div class="card">
     📈 <strong>Tank Level History:</strong>
     <canvas id="tankChart" width="350" height="200"></canvas>
+    <button onclick="tankChart.resetZoom()" style="display:block;margin:10px auto;padding:6px 12px;background:#00bcd4;color:#fff;border:none;border-radius:8px;">
+      🔄 Reset Zoom
+    </button>
   </div>
 
   <div class="card">
@@ -119,6 +122,22 @@
         plugins: {
           legend: {
             labels: { color: '#111' }
+          },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'x',
+              modifierKey: 'ctrl'
+            },
+            zoom: {
+              wheel: {
+                enabled: true,
+              },
+              pinch: {
+                enabled: true
+              },
+              mode: 'x'
+            }
           }
         },
         scales: {
@@ -139,8 +158,10 @@
       tankEl.textContent = val;
       if (val >= 90) {
         alertBox.textContent = "⚠️ Tank Full!";
+        alertBox.className = "alerts";
       } else if (val <= 10) {
         alertBox.textContent = "⚠️ Tank Low!";
+        alertBox.className = "alerts";
       } else {
         alertBox.textContent = "✅ Tank Level Normal";
         alertBox.className = "status-ok";
@@ -149,7 +170,7 @@
       const now = new Date().toLocaleTimeString();
       tankData.push(val);
       tankLabels.push(now);
-      if (tankData.length > 10) {
+      if (tankData.length > 30) {
         tankData.shift();
         tankLabels.shift();
       }
