@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HydroSense Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>💧 HydroSense Dashboard</h1>
+
+  <button id="toggle-mode">🌞 Toggle Mode</button>
+
+  <div id="alert" class="alert">⚠️ ALERT: Tank is FULL! Please turn OFF the motor.</div>
+
+  <div class="card animated" id="flow-card">
+    🚿 <strong>Flow Rate:</strong> <span id="flow">--</span> L/min
+  </div>
+
+  <div class="card animated" id="tank-card">
+    🛢️ <strong>Tank Level:</strong> <span id="tank">--</span> %
+    <div class="progress-bar">
+      <div id="tank-fill" class="fill" style="width: 0%;"></div>
+    </div>
+  </div>
+
+  <div class="card animated" id="moisture-card">
+    🌱 <strong>Soil Moisture:</strong> <span id="moisture">--</span> %
+  </div>
+
+  <div class="card animated">
+    📈 <strong>Tank Level Chart</strong>
+    <canvas id="tankChart" width="400" height="200"></canvas>
+  </div>
+
+  <div class="card animated">
+    💧 <strong>Today's Estimated Water Used:</strong>
+    <p id="usage-estimate">-- Litres</p>
+  </div>
+
+  <div class="card animated" id="tips-card">
+    💡 <strong>Conservation Tip:</strong>
+    <p id="tip-text">Use a bucket instead of a shower.</p>
+    <button onclick="showRandomTip()">🔄 New Tip</button>
+  </div>
+
+  <div class="card animated">
+    📋 <strong>Recent Monitoring Data</strong>
+    <table id="monitoring-table" style="width:100%; margin-top:10px; font-size:0.9em;">
+      <thead>
+        <tr><th>Time</th><th>Flow (L/min)</th><th>Tank Level (%)</th><th>Moisture (%)</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
