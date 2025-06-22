@@ -1,60 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>HydroSense Dashboard</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <h1>💧 HydroSense Dashboard</h1>
+  <header>
+    <h1>💧 HydroSense</h1>
+  </header>
 
-  <button id="toggle-mode">🌞 Toggle Mode</button>
-
-  <div id="alert" class="alert">⚠️ ALERT: Tank is FULL! Please turn OFF the motor.</div>
-
-  <div class="card animated" id="flow-card">
-    🚿 <strong>Flow Rate:</strong> <span id="flow">--</span> L/min
-  </div>
-
-  <div class="card animated" id="tank-card">
-    🛢️ <strong>Tank Level:</strong> <span id="tank">--</span> %
-    <div class="progress-bar">
-      <div id="tank-fill" class="fill" style="width: 0%;"></div>
+  <main>
+    <div class="card">
+      🚿 <strong>Flow Rate:</strong> <span id="flowRate">--</span> L/min
     </div>
-  </div>
 
-  <div class="card animated" id="moisture-card">
-    🌱 <strong>Soil Moisture:</strong> <span id="moisture">--</span> %
-  </div>
+    <div class="card">
+      🛢️ <strong>Tank Level:</strong> <span id="tankLevel">--</span> %
+    </div>
 
-  <div class="card animated">
-    📈 <strong>Tank Level Chart</strong>
-    <canvas id="tankChart" width="400" height="200"></canvas>
-  </div>
+    <div class="card">
+      🌱 <strong>Soil Moisture:</strong> <span id="moisture">--</span> %
+    </div>
 
-  <div class="card animated">
-    💧 <strong>Today's Estimated Water Used:</strong>
-    <p id="usage-estimate">-- Litres</p>
-  </div>
+    <div class="card">
+      🚰 <strong>Motor:</strong> 
+      <button id="toggleMotor">OFF</button>
+    </div>
 
-  <div class="card animated" id="tips-card">
-    💡 <strong>Conservation Tip:</strong>
-    <p id="tip-text">Use a bucket instead of a shower.</p>
-    <button onclick="showRandomTip()">🔄 New Tip</button>
-  </div>
+    <div class="card">
+      📊 <label for="alertThreshold">Show Usage Alert at </label>
+      <input type="number" id="alertThreshold" min="1" max="100" value="90" /> %
+    </div>
 
-  <div class="card animated">
-    📋 <strong>Recent Monitoring Data</strong>
-    <table id="monitoring-table" style="width:100%; margin-top:10px; font-size:0.9em;">
-      <thead>
-        <tr><th>Time</th><th>Flow (L/min)</th><th>Tank Level (%)</th><th>Moisture (%)</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+    <div class="alert" id="alertBox">⚠️ ALERT: Tank is FULL!</div>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <div class="card" style="width: 100%;">
+      <h3>📊 Daily Water Usage (L)</h3>
+      <canvas id="usageChart" width="400" height="150"></canvas>
+    </div>
+
+    <div class="card" style="width: 100%;">
+      <h3>📅 Usage History</h3>
+      <table style="width:100%; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Flow Rate</th>
+            <th>Tank Level</th>
+            <th>Moisture</th>
+          </tr>
+        </thead>
+        <tbody id="historyTable"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer>
+    <p>💡 Tip: Use a bucket instead of a hose when washing vehicles.</p>
+  </footer>
+
   <script src="script.js"></script>
 </body>
 </html>
