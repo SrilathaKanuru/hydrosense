@@ -1,45 +1,74 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>HydroSense Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-  <header>
-    <h1>💧 HydroSense</h1>
-    <button id="themeToggle">🌓</button>
-  </header>
+<script>
+  const ctx = document.getElementById('flowChart').getContext('2d');
 
-  <main>
-    <div class="card">🚿 <strong>Flow Rate:</strong> <span id="flowRate">--</span> L/min</div>
-    <div class="card">🛢️ <strong>Tank Level:</strong> <span id="tankLevel">--</span> %</div>
-    <div class="card">🌱 <strong>Moisture:</strong> <span id="moisture">--</span> %</div>
-    <div class="card">🚰 <strong>Motor:</strong> <button id="toggleMotor">OFF</button></div>
-    <div class="alert" id="alertBox">⚠️ Tank is full!</div>
-    
-    <div class="card wide">
-      <h3>📊 Usage Graph</h3>
-      <canvas id="usageChart"></canvas>
-    </div>
+  // Create gradient fill
+  const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+  gradient.addColorStop(0, 'rgba(0, 188, 212, 0.4)');
+  gradient.addColorStop(1, 'rgba(0, 188, 212, 0)');
 
-    <div class="card wide">
-      <h3>📅 History</h3>
-      <table>
-        <thead>
-          <tr><th>Date</th><th>Flow</th><th>Tank</th><th>Moisture</th></tr>
-        </thead>
-        <tbody id="historyTable"></tbody>
-      </table>
-    </div>
-  </main>
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Flow Rate (L/min)',
+        data: [],
+        fill: true,
+        borderColor: '#00bcd4',
+        backgroundColor: gradient,
+        pointBackgroundColor: '#00bcd4',
+        pointBorderColor: '#fff',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      animation: {
+        duration: 800,
+        easing: 'easeOutQuart'
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#fff',
+            font: { size: 14 }
+          }
+        },
+        tooltip: {
+          backgroundColor: '#333',
+          titleColor: '#00e0ff',
+          bodyColor: '#fff',
+          borderWidth: 1,
+          borderColor: '#00e0ff',
+          cornerRadius: 8,
+          padding: 10
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#fff' },
+          grid: { color: 'rgba(255,255,255,0.1)' },
+          title: { display: true, text: 'Time', color: '#fff' }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#fff' },
+          grid: { color: 'rgba(255,255,255,0.1)' }
+        }
+      }
+    }
+  });
 
-  <footer>
-    <p>💡 Tip: Save water, save life.</p>
-  </footer>
-
-  <script src="script.js"></script>
-</body>
-</html>
+  function updateChart(val) {
+    const now = new Date().toLocaleTimeString();
+    chart.data.labels.push(now);
+    chart.data.datasets[0].data.push(parseFloat(val));
+    if (chart.data.labels.length > 12) {
+      chart.data.labels.shift();
+      chart.data.datasets[0].data.shift();
+    }
+    chart.update();
+  }
+</script>
