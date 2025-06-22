@@ -1,57 +1,20 @@
-let motorOn = false;
-let alertThreshold = 90;
-let historyLogs = [];
+let motor = false;
+const flowElem = document.getElementById("flowRate");
+const tankElem = document.getElementById("tankLevel");
+const moistElem = document.getElementById("moisture");
+const alertBox = document.getElementById("alertBox");
 
-function updateDashboard() {
-  const flowRate = (Math.random() * 4).toFixed(1);
-  const tankLevel = Math.floor(Math.random() * 101);
-  const moisture = Math.floor(Math.random() * 101);
+document.getElementById("toggleMotor").onclick = () => {
+  motor = !motor;
+  document.getElementById("toggleMotor").textContent = motor ? "ON" : "OFF";
+};
 
-  document.getElementById("flowRate").textContent = flowRate;
-  document.getElementById("tankLevel").textContent = tankLevel;
-  document.getElementById("moisture").textContent = moisture;
-
-  updateHistoryLog(flowRate, tankLevel, moisture);
-  updateChart(flowRate);
-
-  const alertBox = document.getElementById("alertBox");
-  if (tankLevel >= alertThreshold) {
-    alertBox.style.display = "block";
-    alertBox.textContent = `⚠️ ALERT: Tank is ${tankLevel}%. Please stop the motor!`;
-  } else {
-    alertBox.style.display = "none";
-  }
-}
-
-document.getElementById("toggleMotor").addEventListener("click", () => {
-  motorOn = !motorOn;
-  document.getElementById("toggleMotor").textContent = motorOn ? "ON" : "OFF";
-});
-
-document.getElementById("alertThreshold").addEventListener("input", (e) => {
-  alertThreshold = parseInt(e.target.value);
-});
-
-function updateHistoryLog(flow, tank, moist) {
-  const today = new Date().toLocaleDateString();
-  const log = { date: today, flow, tank, moist };
-  historyLogs.unshift(log);
-
-  const table = document.getElementById("historyTable");
-  table.innerHTML = "";
-  historyLogs.slice(0, 5).forEach(log => {
-    const row = `<tr>
-      <td>${log.date}</td>
-      <td>${log.flow} L/min</td>
-      <td>${log.tank}%</td>
-      <td>${log.moist}%</td>
-    </tr>`;
-    table.innerHTML += row;
-  });
-}
+document.getElementById("themeToggle").onclick = () => {
+  document.body.classList.toggle("dark-mode");
+};
 
 const ctx = document.getElementById('usageChart').getContext('2d');
-const usageChart = new Chart(ctx, {
+const chart = new Chart(ctx, {
   type: 'bar',
   data: {
     labels: [],
@@ -62,28 +25,61 @@ const usageChart = new Chart(ctx, {
     }]
   },
   options: {
-    responsive: true,
     scales: {
       y: { beginAtZero: true }
     }
   }
 });
 
-function updateChart(flow) {
-  const date = new Date().toLocaleDateString();
-  const labels = usageChart.data.labels;
-  const data = usageChart.data.datasets[0].data;
+let history = [];
 
-  if (labels.includes(date)) {
-    const index = labels.indexOf(date);
-    data[index] = (parseFloat(data[index]) + parseFloat(flow)).toFixed(1);
+function updateData() {
+  const flow = (Math.random() * 5).toFixed(1);
+  const tank = Math.floor(Math.random() * 100);
+  const moist = Math.floor(Math.random() * 100);
+
+  flowElem.textContent = flow;
+  tankElem.textContent = tank;
+  moistElem.textContent = moist;
+
+  if (tank >= 90) {
+    alertBox.style.display = "block";
   } else {
-    labels.push(date);
-    data.push(flow);
+    alertBox.style.display = "none";
   }
 
-  usageChart.update();
+  const today = new Date().toLocaleDateString();
+  history.unshift({ date: today, flow, tank, moist });
+  renderTable();
+  updateChart(today, flow);
 }
 
-updateDashboard();
-setInterval(updateDashboard, 5000);
+function renderTable() {
+  const table = document.getElementById("historyTable");
+  table.innerHTML = "";
+  history.slice(0, 5).forEach(row => {
+    table.innerHTML += `<tr>
+      <td>${row.date}</td>
+      <td>${row.flow}</td>
+      <td>${row.tank}</td>
+      <td>${row.moist}</td>
+    </tr>`;
+  });
+}
+
+function updateChart(label, flow) {
+  const labels = chart.data.labels;
+  const data = chart.data.datasets[0].data;
+
+  const index = labels.indexOf(label);
+  if (index >= 0) {
+    data[index] = (+data[index] + +flow).toFixed(1);
+  } else {
+    labels.push(label);
+    data.push(flow);
+  }
+  chart.update();
+}
+
+updateData();
+setInterval(updateData, 5000);
