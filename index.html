@@ -7,9 +7,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --glass: rgba(255, 255, 255, 0.15);
-      --bg: linear-gradient(135deg, #74ebd5, #ACB6E5);
-      --text: #ffffff;
+      --glass: rgba(255, 255, 255, 0.2);
+      --bg: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+      --text: #fff;
       --highlight: #00bcd4;
     }
 
@@ -29,12 +29,11 @@
 
     header {
       background: transparent;
-      color: white;
       text-align: center;
       padding: 2rem 1rem;
-      font-size: 1.8rem;
+      font-size: 2rem;
       font-weight: bold;
-      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.4);
     }
 
     main {
@@ -47,15 +46,14 @@
 
     .card {
       background: var(--glass);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
       border-radius: 16px;
       padding: 1.5rem;
       width: 90%;
       max-width: 500px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
       text-align: center;
-      color: white;
-      animation: fadeIn 0.8s ease-in-out;
+      animation: fadeIn 0.7s ease-in;
     }
 
     button {
@@ -70,19 +68,18 @@
     }
 
     button:hover {
-      background: #008c9e;
-      box-shadow: 0 0 10px #00bcd4;
+      background: #009bad;
+      box-shadow: 0 0 12px var(--highlight);
     }
 
     canvas {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
       border-radius: 12px;
-      width: 100%;
-      max-width: 450px;
+      max-width: 100%;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(30px); }
+      from { opacity: 0; transform: translateY(40px); }
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
@@ -96,7 +93,7 @@
     <div class="card">🚰 <strong>Motor:</strong> <button id="motorBtn">OFF</button></div>
     <div class="card">
       <h3>📊 Flow Rate Chart</h3>
-      <canvas id="flowChart" height="200"></canvas>
+      <canvas id="flowChart" width="400" height="200"></canvas>
     </div>
   </main>
 
@@ -107,7 +104,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <script>
-    // ✅ Replace with your Firebase config
+    // 🔧 Replace with your actual Firebase config
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -117,6 +114,7 @@
       messagingSenderId: "YOUR_SENDER_ID",
       appId: "YOUR_APP_ID"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -125,13 +123,11 @@
     const moistElem = document.getElementById('moisture');
     const motorBtn = document.getElementById('motorBtn');
 
-    // Motor toggle
     motorBtn.onclick = () => {
       const newState = motorBtn.textContent === 'OFF' ? 'ON' : 'OFF';
       db.ref('motor').set(newState);
     };
 
-    // Live data updates
     db.ref('flow').on('value', snap => {
       const val = snap.val();
       flowElem.textContent = val;
@@ -143,10 +139,10 @@
       motorBtn.textContent = snap.val();
     });
 
-    // Chart setup
+    // 🎨 Chart Setup
     const ctx = document.getElementById('flowChart').getContext('2d');
     const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-    gradient.addColorStop(0, 'rgba(0, 188, 212, 0.4)');
+    gradient.addColorStop(0, 'rgba(0, 188, 212, 0.5)');
     gradient.addColorStop(1, 'rgba(0, 188, 212, 0)');
 
     const chart = new Chart(ctx, {
@@ -157,33 +153,29 @@
           label: 'Flow Rate (L/min)',
           data: [],
           fill: true,
-          borderColor: '#00e0ff',
+          borderColor: '#00eaff',
           backgroundColor: gradient,
-          pointBackgroundColor: '#00e0ff',
+          pointBackgroundColor: '#00eaff',
           pointBorderColor: '#fff',
-          pointRadius: 5,
-          pointHoverRadius: 7,
+          pointRadius: 4,
+          pointHoverRadius: 6,
           tension: 0.4
         }]
       },
       options: {
         responsive: true,
-        animation: {
-          duration: 800,
-          easing: 'easeOutQuart'
-        },
+        animation: { duration: 600 },
         plugins: {
           legend: {
             labels: { color: '#fff', font: { size: 14 } }
           },
           tooltip: {
-            backgroundColor: '#333',
-            titleColor: '#00e0ff',
-            bodyColor: '#fff',
-            borderColor: '#00e0ff',
+            backgroundColor: '#111',
+            borderColor: '#00eaff',
             borderWidth: 1,
             cornerRadius: 8,
-            padding: 10
+            titleColor: '#00eaff',
+            bodyColor: '#fff'
           }
         },
         scales: {
