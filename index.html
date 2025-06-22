@@ -11,6 +11,8 @@
     :root {
       --glass: rgba(255, 255, 255, 0.15);
       --bg-light: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      --bg-dark: linear-gradient(135deg, #1e1e2f, #3c3c5e);
+      --text-light: #fff;
       --text-dark: #111;
       --alert-color: #ff3860;
       --ok-color: #4CAF50;
@@ -22,6 +24,12 @@
       padding: 1rem;
       background: var(--bg-light);
       color: var(--text-dark);
+      transition: background 0.5s ease;
+    }
+
+    body.dark-mode {
+      background: var(--bg-dark);
+      color: var(--text-light);
     }
 
     .card {
@@ -66,13 +74,22 @@
     }
 
     button {
-      margin-top: 10px;
+      margin: 10px auto 0;
       padding: 8px 12px;
       background: #00bcd4;
       color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
+      display: block;
+    }
+
+    body.dark-mode .card {
+      color: white;
+    }
+
+    body.dark-mode th, body.dark-mode td {
+      border-color: #555;
     }
 
     @keyframes blink {
@@ -84,10 +101,10 @@
   <h2 style="text-align:center">💧 HydroSense Dashboard</h2>
 
   <div class="card">
-    <div>🚿 <strong>Flow Rate:</strong> <span id="flowRate">--</span> L/min</div>
-    <div>🛢️ <strong>Tank Level:</strong> <span id="tankLevel">--</span>%</div>
-    <div>🌱 <strong>Moisture:</strong> <span id="moisture">--</span>%</div>
-    <div>🚰 <strong>Motor:</strong> <button id="toggleMotor">OFF</button></div>
+    🚿 <strong>Flow Rate:</strong> <span id="flowRate">--</span> L/min<br/>
+    🛢️ <strong>Tank Level:</strong> <span id="tankLevel">--</span>%<br/>
+    🌱 <strong>Moisture:</strong> <span id="moisture">--</span>%<br/>
+    🚰 <strong>Motor:</strong> <button id="toggleMotor">OFF</button>
     <div id="alertBox" class="alerts"></div>
   </div>
 
@@ -119,21 +136,22 @@
     const moistEl = document.getElementById("moisture");
     const alertBox = document.getElementById("alertBox");
     const toggleMotorBtn = document.getElementById("toggleMotor");
-    const themeBtn = document.getElementById("themeToggle");
+    const themeToggleBtn = document.getElementById("themeToggle");
 
-    let history = [];
     let motor = false;
+    let history = [];
 
     toggleMotorBtn.onclick = () => {
       motor = !motor;
       toggleMotorBtn.textContent = motor ? "ON" : "OFF";
     };
 
-    themeBtn.onclick = () => {
+    themeToggleBtn.onclick = () => {
       document.body.classList.toggle("dark-mode");
     };
 
     const tankData = [], tankLabels = [];
+
     const ctxTank = document.getElementById("tankChart").getContext("2d");
     const tankChart = new Chart(ctxTank, {
       type: 'line',
