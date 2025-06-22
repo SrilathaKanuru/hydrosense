@@ -5,6 +5,7 @@
   <title>HydroSense Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --glass: rgba(255, 255, 255, 0.15);
@@ -13,263 +14,174 @@
       --text-light: #fff;
       --text-dark: #111;
       --primary: #00bcd4;
+      --alert-color: #ff3860;
+      --ok-color: #4CAF50;
     }
 
-    * { box-sizing: border-box; }
     body {
       font-family: 'Nunito', sans-serif;
-      margin: 0; padding: 0;
+      margin: 0;
+      padding: 1rem;
       background: var(--bg-light);
       color: var(--text-dark);
-      transition: background 0.4s, color 0.4s;
-    }
-    body.dark-mode {
-      background: var(--bg-dark);
-      color: var(--text-light);
-    }
-
-    header {
-      padding: 2rem 1rem;
-      text-align: center;
-      font-size: 2rem;
-      font-weight: bold;
-    }
-
-    main {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1rem;
-      gap: 1.5rem;
     }
 
     .card {
       background: var(--glass);
-      backdrop-filter: blur(14px);
-      border-radius: 16px;
-      padding: 1.5rem;
-      width: 90%;
-      max-width: 500px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      padding: 1rem;
+      border-radius: 12px;
+      margin: 1rem auto;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .alerts {
+      color: var(--alert-color);
+      font-weight: bold;
+      margin-top: 10px;
       text-align: center;
+      animation: blink 1s step-start infinite;
     }
 
-    .progress {
-      background: #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-      height: 16px;
-      margin-top: 0.5rem;
-    }
-    .bar {
-      height: 100%;
-      background: var(--primary);
-      transition: width 0.4s;
-    }
-
-    button, .fab {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 0.6rem 1.2rem;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover, .fab:hover {
-      background: #008fa0;
-    }
-
-    .fab {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
+    .status-ok {
+      color: var(--ok-color);
+      font-weight: bold;
+      text-align: center;
+      margin-top: 10px;
     }
 
     canvas {
-      border-radius: 10px;
-      max-width: 100%;
+      margin-top: 1rem;
     }
 
-    .alerts { color: red; font-weight: bold; margin-top: 10px; }
-    .summary { font-size: 0.9rem; margin-top: 10px; opacity: 0.8; }
+    @keyframes blink {
+      50% { opacity: 0.3; }
+    }
   </style>
 </head>
 <body>
-  <header>💧 HydroSense Dashboard <button onclick="toggleTheme()">🌓</button></header>
-  <main>
-    <div class="card">
-      🚿 <strong>Flow Rate:</strong> <span id="flow">--</span> L/min
-      <div class="progress"><div id="flowBar" class="bar" style="width:0%"></div></div>
-    </div>
-    <div class="card">
-      🛢️ <strong>Tank Level:</strong> <span id="tank">--</span> %
-      <div class="progress"><div id="tankBar" class="bar" style="width:0%"></div></div>
-    </div>
-    <div class="card">
-      🌱 <strong>Soil Moisture:</strong> <span id="moisture">--</span> %
-      <div class="progress"><div id="moistBar" class="bar" style="width:0%"></div></div>
-    </div>
-    <div class="card">
-      🚰 <strong>Motor:</strong> <button id="motorBtn">OFF</button>
-    </div>
-    <div class="card">
-      <div class="alerts" id="alerts"></div>
-      <div class="summary" id="lastUpdated"></div>
-    </div>
-    <div class="card">
-      <h3>📊 Flow Rate Chart</h3>
-      <canvas id="flowChart" width="400" height="200"></canvas>
-      <button onclick="downloadCSV()">⬇️ Export CSV</button>
-    </div>
-    <div class="card summary">
-      📈 <strong>Today’s Usage Summary</strong><br>
-      Avg Flow: <span id="avgFlow">--</span> L/min<br>
-      Max Moisture: <span id="maxMoist">--</span> %
-    </div>
-  </main>
-  <div class="fab" onclick="toggleMotor()">🔁</div>
+  <h2 style="text-align:center">💧 HydroSense Dashboard</h2>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <div class="card">
+    🛢️ <strong>Tank Level:</strong> <span id="tankLevel">--</span>%
+    <div id="alertBox" class="alerts"></div>
+  </div>
+
+  <div class="card">
+    📈 <strong>Tank Level History:</strong>
+    <canvas id="tankChart" width="350" height="200"></canvas>
+  </div>
+
+  <div class="card">
+    📊 <strong>Weekly Water Usage:</strong>
+    <canvas id="weeklyUsageChart" width="350" height="200"></canvas>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script>
-    const config = {
+    const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT.firebaseapp.com",
       databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-      projectId: "YOUR_PROJECT",
+      projectId: "YOUR_PROJECT_ID",
       storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "SENDER_ID",
-      appId: "APP_ID"
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
-    firebase.initializeApp(config);
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const flowEl = document.getElementById('flow');
-    const tankEl = document.getElementById('tank');
-    const moistEl = document.getElementById('moisture');
-    const motorBtn = document.getElementById('motorBtn');
-    const alerts = document.getElementById('alerts');
-    const flowBar = document.getElementById('flowBar');
-    const tankBar = document.getElementById('tankBar');
-    const moistBar = document.getElementById('moistBar');
-    const lastUpdated = document.getElementById('lastUpdated');
-    const avgFlowEl = document.getElementById('avgFlow');
-    const maxMoistEl = document.getElementById('maxMoist');
+    const tankEl = document.getElementById("tankLevel");
+    const alertBox = document.getElementById("alertBox");
 
-    motorBtn.onclick = toggleMotor;
+    const tankData = [];
+    const tankLabels = [];
 
-    function toggleMotor() {
-      const newState = motorBtn.textContent === 'OFF' ? 'ON' : 'OFF';
-      db.ref('motor').set(newState);
-    }
-
-    function updateBars(val, bar) {
-      bar.style.width = Math.min(val, 100) + '%';
-    }
-
-    db.ref('flow').on('value', snap => {
-      const val = snap.val();
-      flowEl.textContent = val;
-      updateBars(val, flowBar);
-      updateChart(val);
-    });
-    db.ref('tank').on('value', snap => {
-      const val = snap.val();
-      tankEl.textContent = val;
-      updateBars(val, tankBar);
-      alerts.textContent = val >= 100 ? '⚠️ Tank Full!' : val <= 10 ? '⚠️ Tank Low!' : '';
-    });
-    db.ref('moisture').on('value', snap => {
-      const val = snap.val();
-      moistEl.textContent = val;
-      updateBars(val, moistBar);
-    });
-    db.ref('motor').on('value', snap => motorBtn.textContent = snap.val());
-
-    setInterval(() => {
-      lastUpdated.textContent = 'Last Updated: ' + new Date().toLocaleTimeString();
-    }, 3000);
-
-    let flowData = [];
-    const ctx = document.getElementById('flowChart').getContext('2d');
-    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-    gradient.addColorStop(0, 'rgba(0, 188, 212, 0.5)');
-    gradient.addColorStop(1, 'rgba(0, 188, 212, 0)');
-
-    const chart = new Chart(ctx, {
+    const ctxTank = document.getElementById("tankChart").getContext("2d");
+    const tankChart = new Chart(ctxTank, {
       type: 'line',
       data: {
-        labels: [],
+        labels: tankLabels,
         datasets: [{
-          label: 'Flow Rate (L/min)',
-          data: [],
+          label: 'Tank Level (%)',
+          data: tankData,
+          borderColor: '#00acc1',
+          backgroundColor: 'rgba(0,188,212,0.3)',
           fill: true,
-          borderColor: '#00eaff',
-          backgroundColor: gradient,
-          pointBackgroundColor: '#00eaff',
-          pointRadius: 4,
-          tension: 0.4
+          tension: 0.4,
+          pointRadius: 3,
+          pointBackgroundColor: '#00acc1'
         }]
       },
       options: {
         responsive: true,
-        animation: { duration: 500 },
         plugins: {
-          legend: { labels: { color: '#fff' } },
-          tooltip: { backgroundColor: '#111', titleColor: '#00eaff', bodyColor: '#fff' }
+          legend: {
+            labels: { color: '#111' }
+          }
         },
         scales: {
-          x: { ticks: { color: '#fff' }, title: { display: true, text: 'Time', color: '#fff' } },
-          y: { beginAtZero: true, ticks: { color: '#fff' } }
+          x: {
+            ticks: { color: '#111' }
+          },
+          y: {
+            beginAtZero: true,
+            max: 100,
+            ticks: { color: '#111' }
+          }
         }
       }
     });
 
-    function updateChart(val) {
-      const now = new Date().toLocaleTimeString();
-      chart.data.labels.push(now);
-      chart.data.datasets[0].data.push(parseFloat(val));
-      flowData.push(parseFloat(val));
-      if (chart.data.labels.length > 12) {
-        chart.data.labels.shift();
-        chart.data.datasets[0].data.shift();
+    db.ref("tank").on("value", snap => {
+      const val = snap.val();
+      tankEl.textContent = val;
+      if (val >= 90) {
+        alertBox.textContent = "⚠️ Tank Full!";
+      } else if (val <= 10) {
+        alertBox.textContent = "⚠️ Tank Low!";
+      } else {
+        alertBox.textContent = "✅ Tank Level Normal";
+        alertBox.className = "status-ok";
       }
-      chart.update();
-      calculateStats();
-    }
 
-    function calculateStats() {
-      if (flowData.length === 0) return;
-      const avg = (flowData.reduce((a, b) => a + b, 0) / flowData.length).toFixed(1);
-      avgFlowEl.textContent = avg;
-      maxMoistEl.textContent = moistEl.textContent;
-    }
+      const now = new Date().toLocaleTimeString();
+      tankData.push(val);
+      tankLabels.push(now);
+      if (tankData.length > 10) {
+        tankData.shift();
+        tankLabels.shift();
+      }
+      tankChart.update();
+    });
 
-    function downloadCSV() {
-      let csv = 'Time,Flow Rate\n';
-      chart.data.labels.forEach((time, i) => {
-        csv += `${time},${chart.data.datasets[0].data[i]}\n`;
-      });
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'flow_data.csv';
-      link.click();
-    }
+    const weeklyUsageData = [80, 65, 70, 90, 60, 75, 85];
+    const weeklyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    function toggleTheme() {
-      document.body.classList.toggle('dark-mode');
-    }
+    const ctxWeekly = document.getElementById("weeklyUsageChart").getContext("2d");
+    const weeklyUsageChart = new Chart(ctxWeekly, {
+      type: 'bar',
+      data: {
+        labels: weeklyLabels,
+        datasets: [{
+          label: 'Usage (Liters)',
+          data: weeklyUsageData,
+          backgroundColor: 'rgba(0, 188, 212, 0.6)',
+          borderRadius: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { ticks: { color: '#111' } },
+          y: { beginAtZero: true, ticks: { color: '#111' } }
+        }
+      }
+    });
   </script>
 </body>
 </html>
