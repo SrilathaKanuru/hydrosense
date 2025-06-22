@@ -7,33 +7,32 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --glass: rgba(255, 255, 255, 0.2);
-      --bg: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
-      --text: #fff;
-      --highlight: #00bcd4;
+      --glass: rgba(255, 255, 255, 0.15);
+      --bg-light: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      --bg-dark: linear-gradient(135deg, #1e1e2f, #3c3c5e);
+      --text-light: #fff;
+      --text-dark: #111;
+      --primary: #00bcd4;
     }
 
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       font-family: 'Nunito', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: var(--bg);
-      color: var(--text);
-      overflow-x: hidden;
-      min-height: 100vh;
+      margin: 0; padding: 0;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      transition: background 0.4s, color 0.4s;
+    }
+    body.dark-mode {
+      background: var(--bg-dark);
+      color: var(--text-light);
     }
 
     header {
-      background: transparent;
-      text-align: center;
       padding: 2rem 1rem;
+      text-align: center;
       font-size: 2rem;
       font-weight: bold;
-      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.4);
     }
 
     main {
@@ -51,95 +50,157 @@
       padding: 1.5rem;
       width: 90%;
       max-width: 500px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
       text-align: center;
-      animation: fadeIn 0.7s ease-in;
     }
 
-    button {
-      background: var(--highlight);
+    .progress {
+      background: #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      height: 16px;
+      margin-top: 0.5rem;
+    }
+    .bar {
+      height: 100%;
+      background: var(--primary);
+      transition: width 0.4s;
+    }
+
+    button, .fab {
+      background: var(--primary);
       color: white;
       border: none;
       padding: 0.6rem 1.2rem;
       border-radius: 8px;
       font-size: 1rem;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: background 0.3s;
+    }
+    button:hover, .fab:hover {
+      background: #008fa0;
     }
 
-    button:hover {
-      background: #009bad;
-      box-shadow: 0 0 12px var(--highlight);
+    .fab {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
     }
 
     canvas {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
+      border-radius: 10px;
       max-width: 100%;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(40px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    .alerts { color: red; font-weight: bold; margin-top: 10px; }
+    .summary { font-size: 0.9rem; margin-top: 10px; opacity: 0.8; }
   </style>
 </head>
 <body>
-  <header>💧 HydroSense Dashboard</header>
+  <header>💧 HydroSense Dashboard <button onclick="toggleTheme()">🌓</button></header>
   <main>
-    <div class="card">🚿 <strong>Flow Rate:</strong> <span id="flow">--</span> L/min</div>
-    <div class="card">🛢️ <strong>Tank Level:</strong> <span id="tank">--</span> %</div>
-    <div class="card">🌱 <strong>Soil Moisture:</strong> <span id="moisture">--</span> %</div>
-    <div class="card">🚰 <strong>Motor:</strong> <button id="motorBtn">OFF</button></div>
+    <div class="card">
+      🚿 <strong>Flow Rate:</strong> <span id="flow">--</span> L/min
+      <div class="progress"><div id="flowBar" class="bar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      🛢️ <strong>Tank Level:</strong> <span id="tank">--</span> %
+      <div class="progress"><div id="tankBar" class="bar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      🌱 <strong>Soil Moisture:</strong> <span id="moisture">--</span> %
+      <div class="progress"><div id="moistBar" class="bar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      🚰 <strong>Motor:</strong> <button id="motorBtn">OFF</button>
+    </div>
+    <div class="card">
+      <div class="alerts" id="alerts"></div>
+      <div class="summary" id="lastUpdated"></div>
+    </div>
     <div class="card">
       <h3>📊 Flow Rate Chart</h3>
       <canvas id="flowChart" width="400" height="200"></canvas>
+      <button onclick="downloadCSV()">⬇️ Export CSV</button>
+    </div>
+    <div class="card summary">
+      📈 <strong>Today’s Usage Summary</strong><br>
+      Avg Flow: <span id="avgFlow">--</span> L/min<br>
+      Max Moisture: <span id="maxMoist">--</span> %
     </div>
   </main>
+  <div class="fab" onclick="toggleMotor()">🔁</div>
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
   <script>
-    // 🔧 Replace with your actual Firebase config
-    const firebaseConfig = {
+    const config = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT.firebaseapp.com",
       databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-      projectId: "YOUR_PROJECT_ID",
+      projectId: "YOUR_PROJECT",
       storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
     };
-
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(config);
     const db = firebase.database();
 
-    const flowElem = document.getElementById('flow');
-    const tankElem = document.getElementById('tank');
-    const moistElem = document.getElementById('moisture');
+    const flowEl = document.getElementById('flow');
+    const tankEl = document.getElementById('tank');
+    const moistEl = document.getElementById('moisture');
     const motorBtn = document.getElementById('motorBtn');
+    const alerts = document.getElementById('alerts');
+    const flowBar = document.getElementById('flowBar');
+    const tankBar = document.getElementById('tankBar');
+    const moistBar = document.getElementById('moistBar');
+    const lastUpdated = document.getElementById('lastUpdated');
+    const avgFlowEl = document.getElementById('avgFlow');
+    const maxMoistEl = document.getElementById('maxMoist');
 
-    motorBtn.onclick = () => {
+    motorBtn.onclick = toggleMotor;
+
+    function toggleMotor() {
       const newState = motorBtn.textContent === 'OFF' ? 'ON' : 'OFF';
       db.ref('motor').set(newState);
-    };
+    }
+
+    function updateBars(val, bar) {
+      bar.style.width = Math.min(val, 100) + '%';
+    }
 
     db.ref('flow').on('value', snap => {
       const val = snap.val();
-      flowElem.textContent = val;
+      flowEl.textContent = val;
+      updateBars(val, flowBar);
       updateChart(val);
     });
-    db.ref('tank').on('value', snap => tankElem.textContent = snap.val());
-    db.ref('moisture').on('value', snap => moistElem.textContent = snap.val());
-    db.ref('motor').on('value', snap => {
-      motorBtn.textContent = snap.val();
+    db.ref('tank').on('value', snap => {
+      const val = snap.val();
+      tankEl.textContent = val;
+      updateBars(val, tankBar);
+      alerts.textContent = val >= 100 ? '⚠️ Tank Full!' : val <= 10 ? '⚠️ Tank Low!' : '';
     });
+    db.ref('moisture').on('value', snap => {
+      const val = snap.val();
+      moistEl.textContent = val;
+      updateBars(val, moistBar);
+    });
+    db.ref('motor').on('value', snap => motorBtn.textContent = snap.val());
 
-    // 🎨 Chart Setup
+    setInterval(() => {
+      lastUpdated.textContent = 'Last Updated: ' + new Date().toLocaleTimeString();
+    }, 3000);
+
+    let flowData = [];
     const ctx = document.getElementById('flowChart').getContext('2d');
     const gradient = ctx.createLinearGradient(0, 0, 0, 200);
     gradient.addColorStop(0, 'rgba(0, 188, 212, 0.5)');
@@ -156,39 +217,20 @@
           borderColor: '#00eaff',
           backgroundColor: gradient,
           pointBackgroundColor: '#00eaff',
-          pointBorderColor: '#fff',
           pointRadius: 4,
-          pointHoverRadius: 6,
           tension: 0.4
         }]
       },
       options: {
         responsive: true,
-        animation: { duration: 600 },
+        animation: { duration: 500 },
         plugins: {
-          legend: {
-            labels: { color: '#fff', font: { size: 14 } }
-          },
-          tooltip: {
-            backgroundColor: '#111',
-            borderColor: '#00eaff',
-            borderWidth: 1,
-            cornerRadius: 8,
-            titleColor: '#00eaff',
-            bodyColor: '#fff'
-          }
+          legend: { labels: { color: '#fff' } },
+          tooltip: { backgroundColor: '#111', titleColor: '#00eaff', bodyColor: '#fff' }
         },
         scales: {
-          x: {
-            ticks: { color: '#fff' },
-            grid: { color: 'rgba(255,255,255,0.1)' },
-            title: { display: true, text: 'Time', color: '#fff' }
-          },
-          y: {
-            beginAtZero: true,
-            ticks: { color: '#fff' },
-            grid: { color: 'rgba(255,255,255,0.1)' }
-          }
+          x: { ticks: { color: '#fff' }, title: { display: true, text: 'Time', color: '#fff' } },
+          y: { beginAtZero: true, ticks: { color: '#fff' } }
         }
       }
     });
@@ -197,11 +239,36 @@
       const now = new Date().toLocaleTimeString();
       chart.data.labels.push(now);
       chart.data.datasets[0].data.push(parseFloat(val));
+      flowData.push(parseFloat(val));
       if (chart.data.labels.length > 12) {
         chart.data.labels.shift();
         chart.data.datasets[0].data.shift();
       }
       chart.update();
+      calculateStats();
+    }
+
+    function calculateStats() {
+      if (flowData.length === 0) return;
+      const avg = (flowData.reduce((a, b) => a + b, 0) / flowData.length).toFixed(1);
+      avgFlowEl.textContent = avg;
+      maxMoistEl.textContent = moistEl.textContent;
+    }
+
+    function downloadCSV() {
+      let csv = 'Time,Flow Rate\n';
+      chart.data.labels.forEach((time, i) => {
+        csv += `${time},${chart.data.datasets[0].data[i]}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'flow_data.csv';
+      link.click();
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
     }
   </script>
 </body>
